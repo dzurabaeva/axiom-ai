@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AXIOM AI Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            color: #00d4ff;
+            font-family: 'Courier New', monospace;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hud-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .grid-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+            animation: scan 3s linear infinite;
+            opacity: 0.5;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        .corner {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border: 2px solid #00d4ff;
+        }
+
+        .corner-tl { top: 20px; left: 20px; border-right: 0; border-bottom: 0; }
+        .corner-tr { top: 20px; right: 20px; border-left: 0; border-bottom: 0; }
+        .corner-bl { bottom: 20px; left: 20px; border-right: 0; border-top: 0; }
+        .corner-br { bottom: 20px; right: 20px; border-left: 0; border-top: 0; }
+
+        .reactor-container {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .reactor {
+            width: 120px;
+            height: 120px;
+            border: 3px solid #00d4ff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 30px rgba(0, 212, 255, 0.3); }
+            50% { transform: scale(1.05); box-shadow: 0 0 50px rgba(0, 212, 255, 0.6); }
+        }
+
+        .reactor-core {
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle, #00d4ff 0%, transparent 70%);
+            border-radius: 50%;
+            animation: corePulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes corePulse {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        .status-text {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            letter-spacing: 3px;
+            color: #00d4ff;
+        }
+
+        .info-display {
+            text-align: center;
+            margin-bottom: 30px;
+            z-index: 10;
+        }
+
+        .greeting {
+            font-size: 24px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .command-text {
+            font-size: 14px;
+            opacity: 0.7;
+            margin-bottom: 10px;
+        }
+
+        .response-text {
+            font-size: 16px;
+            color: #fff;
+            min-height: 24px;
+            text-shadow: 0 0 5px rgba(0, 212, 255, 0.3);
+        }
+
+        .lang-switcher {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .lang-btn {
+            padding: 8px 20px;
+            border: 1px solid #00d4ff;
+            background: transparent;
+            color: #00d4ff;
+            cursor: pointer;
+            border-radius: 20px;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .lang-btn.active {
+            background: rgba(0, 212, 255, 0.2);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .mic-button {
+            width: 80px;
+            height: 80px;
+            border: 2px solid #00d4ff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(0, 212, 255, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .mic-button:hover {
+            background: rgba(0, 212, 255, 0.2);
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.4);
+        }
+
+        .mic-button.listening {
+            animation: micPulse 1s ease-in-out infinite;
+            background: rgba(0, 212, 255, 0.3);
+        }
+
+        @keyframes micPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .mic-icon {
+            width: 40px;
+            height: 40px;
+            fill: #00d4ff;
+        }
+
+        .hints {
+            position: absolute;
+            bottom: 80px;
+            text-align: center;
+            font-size: 11px;
+            opacity: 0.5;
+            width: 90%;
+        }
+
+        .hint-item {
+            margin: 3px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="hud-container">
+        <div class="grid-bg"></div>
+        <div class="scan-line"></div>
+        
+        <div class="corner corner-tl"></div>
+        <div class="corner corner-tr"></div>
+        <div class="corner corner-bl"></div>
+        <div class="corner corner-br"></div>
+
+        <div class="reactor-container">
+            <div class="reactor" id="reactor">
+                <div class="reactor-core"></div>
+                <div class="status-text" id="statusText">ONLINE</div>
+            </div>
+        </div>
+
+        <div class="info-display">
+            <div class="greeting" id="greeting">Добро пожаловать, мисс</div>
+            <div class="command-text" id="commandText">Нажмите микрофон для команд</div>
+            <div class="response-text" id="responseText"></div>
+        </div>
+
+        <div class="lang-switcher">
+            <button class="lang-btn active" onclick="setLanguage('ru')" id="btnRu">Русский</button>
+            <button class="lang-btn" onclick="setLanguage('en')" id="btnEn">English</button>
+        </div>
+
+        <div class="mic-button" id="micButton" onclick="toggleListening()">
+            <svg class="mic-icon" viewBox="0 0 24 24">
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+            </svg>
+        </div>
+
+        <div class="hints" id="hints">
+            <div class="hint-item">"Время" / "Time" — текущее время</div>
+            <div class="hint-item">"Дата" / "Date" — сегодняшняя дата</div>
+            <div class="hint-item">"Привет" / "Hello" — приветствие</div>
+        </div>
+    </div>
+
+    <script>
+              // Global variables
+        let recognition = null;
+        let isListening = false;
+        let currentLang = 'ru-RU';
+        let synth = window.speechSynthesis;
+
+        // Translations
+        const translations = {
+            ru: {
+                langCode: 'ru-RU',
+                greeting: 'Добро пожаловать, мисс',
+                waiting: 'Нажмите микрофон для команд',
+                listening: 'Слушаю...',
+                processing: 'Обрабатываю...',
+                statusOnline: 'ONLINE',
+                statusListening: 'LISTENING',
+                hints: [
+                    '"Время" — текущее время',
+                    '"Дата" — сегодняшняя дата',
+                    '"Привет" — приветствие'
+                ],
+                responses: {
+                    hello: ['Здравствуйте, мисс. Готов к работе.', 'Приветствую, мисс. AXIOM в режиме ожидания.'],
+                    time: () => `Текущее время: ${new Date().toLocaleTimeString('ru-RU')}`,
+                    date: () => `Сегодня: ${new Date().toLocaleDateString('ru-RU', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`,
+                    unknown: 'Команда не распознана. Попробуйте: время, дата, привет.'
+                }
+            },
+            en: {
+                langCode: 'en-GB',
+                greeting: 'Welcome back, miss',
+                waiting: 'Tap microphone for commands',
+                listening: 'Listening...',
+                processing: 'Processing...',
+                statusOnline: 'ONLINE',
+                statusListening: 'LISTENING',
+                hints: [
+                    '"Time" — current time',
+                    '"Date" — today\'s date',
+                    '"Hello" — greeting'
+                ],
+                responses: {
+                    hello: ['Hello, miss. Ready for work.', 'Greetings, miss. AXIOM standing by.'],
+                    time: () => `Current time: ${new Date().toLocaleTimeString('en-GB')}`,
+                    date: () => `Today is: ${new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`,
+                    unknown: 'Command not recognized. Try: time, date, hello.'
+                }
+            }
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initSpeechRecognition();
+            speak(translations.ru.greeting);
+        });
+
+        // Initialize Speech Recognition
+        function initSpeechRecognition() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = currentLang;
+
+                recognition.onstart = () => {
+                    isListening = true;
+                    updateUI('listening');
+                };
+
+                recognition.onend = () => {
+                    isListening = false;
+                    updateUI('online');
+                };
+
+                recognition.onresult = (event) => {
+                    const command = event.results[0][0].transcript.toLowerCase();
+                    processCommand(command);
+                };
+
+                recognition.onerror = (event) => {
+                    console.error('Speech recognition error:', event.error);
+                    isListening = false;
+                    updateUI('online');
+                };
+            } else {
+                alert('Speech recognition not supported in this browser');
+            }
+        }
+
+        // Toggle listening
+        function toggleListening() {
+            if (!recognition) return;
+            
+            if (isListening) {
+                recognition.stop();
+            } else {
+                recognition.lang = currentLang;
+                recognition.start();
+            }
+        }
+
+        // Update UI
+        function updateUI(state) {
+            const reactor = document.getElementById('reactor');
+            const statusText = document.getElementById('statusText');
+            const commandText = document.getElementById('commandText');
+            const micButton = document.getElementById('micButton');
+            const t = translations[currentLang === 'ru-RU' ? 'ru' : 'en'];
+
+            if (state === 'listening') {
+                reactor.classList.add('listening');
+                statusText.textContent = t.statusListening;
+                commandText.textContent = t.listening;
+                micButton.classList.add('listening');
+            } else {
+                reactor.classList.remove('listening');
+                statusText.textContent = t.statusOnline;
+                commandText.textContent = t.waiting;
+                micButton.classList.remove('listening');
+            }
+        }
+
+        // Process command
+        function processCommand(command) {
+            const t = translations[currentLang === 'ru-RU' ? 'ru' : 'en'];
+            let response = '';
+            let speakResponse = '';
+
+            if (command.includes('привет') || command.includes('hello') || command.includes('здравствуй')) {
+                const responses = t.responses.hello;
+                speakResponse = responses[Math.floor(Math.random() * responses.length)];
+                response = speakResponse;
+            } else if (command.includes('время') || command.includes('time')) {
+                speakResponse = t.responses.time();
+                response = speakResponse;
+            } else if (command.includes('дата') || command.includes('date') || command.includes('число')) {
+                speakResponse = t.responses.date();
+                response = speakResponse;
+            } else {
+                speakResponse = t.responses.unknown;
+                response = '❓ ' + speakResponse;
+            }
+
+            document.getElementById('responseText').textContent = response;
+            speak(speakResponse);
+        }
+
+        // Speak text
+        function speak(text) {
+            if (!synth) return;
+            
+            // Cancel any ongoing speech
+            synth.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = currentLang;
+            utterance.rate = 0.9;
+            utterance.pitch = 1;
+            
+            // Try to find a good voice
+            const voices = synth.getVoices();
+            const preferredVoice = voices.find(voice => 
+                (currentLang === 'ru-RU' && voice.lang.includes('ru')) ||
+                (currentLang === 'en-GB' && voice.lang.includes('en'))
+            );
+            
+            if (preferredVoice) {
+                utterance.voice = preferredVoice;
+            }
+
+            synth.speak(utterance);
+        }
+
+        // Set language
+        function setLanguage(lang) {
+            currentLang = lang === 'ru' ? 'ru-RU' : 'en-GB';
+            
+            // Update buttons
+            document.getElementById('btnRu').classList.toggle('active', lang === 'ru');
+            document.getElementById('btnEn').classList.toggle('active', lang === 'en');
+            
+            // Update text
+            const t = translations[lang];
+            document.getElementById('greeting').textContent = t.greeting;
+            document.getElementById('commandText').textContent = t.waiting;
+            document.getElementById('statusText').textContent = t.statusOnline;
+            
+            // Update hints
+            const hintsHtml = t.hints.map(hint => `<div class="hint-item">${hint}</div>`).join('');
+            document.getElementById('hints').innerHTML = hintsHtml;
+            
+            // Speak greeting
+            speak(t.greeting);
+            
+            // Reinitialize recognition with new language
+            if (recognition) {
+                recognition.lang = currentLang;
+            }
+        }
+
+        // Load voices when available
+        if (synth) {
+            synth.onvoiceschanged = () => {
+                console.log('Voices loaded:', synth.getVoices().length);
+            };
+        }
+    </script>
+</body>
+</html>
